@@ -1,23 +1,17 @@
 //
 //  ViewController.swift
-//  PostApp
+//  PostsDisplayApp
 //
 //  Created by Sankaranarayana Settyvari on 05/03/24.
 //
 
 import UIKit
 
-struct Post: Codable {
-    let userId: Int
-    let id: Int
-    let title: String
-    let body: String
-}
 
 class ViewController: UIViewController {
  
     var postsArray = NSMutableArray()
-    var totalPosts:[Post] = []
+    var totalPosts:[PostResponse] = []
     
     let scrollView: UIScrollView =
       {
@@ -47,7 +41,7 @@ class ViewController: UIViewController {
       let tableViewUniqueIdFactor = 1000
       
       // https://stackoverflow.com/a/21130486/1619193
-      // You can ignore this function, created for convenience
+    
       private func randomColor() -> UIColor
       {
           let red = CGFloat(arc4random_uniform(256)) / 255.0
@@ -68,27 +62,15 @@ class ViewController: UIViewController {
     }
     
     func fetchPosts()  {
-        let url = URL(string: "https://jsonplaceholder.typicode.com/posts")
-        let urlsession = URLSession.shared
-        urlsession.dataTask(with: URLRequest(url: url!), completionHandler: { data, response, error in
-            
-            
-            guard let data = data else { return }
-            do {
-                let json = try JSONDecoder().decode([Post].self, from: data)
-                self.totalPosts = json
-                //print(json)
+        PostResource().fetchPost(completionHandler: { [self] result in
+            if result != nil {
                 DispatchQueue.main.async {
+                    self.totalPosts = result!
                     self.displayPosts()
+                    
                 }
-                
-            }
-            
-            catch {
-                print(error.localizedDescription)
             }
         })
-        .resume()
     }
     
     private func configureScrollViewLayout()
@@ -164,20 +146,19 @@ class ViewController: UIViewController {
             for i in 0 ..< postsArray.count
             {
                 let tableView = UITableView()
-                
+                tableView.separatorStyle = .singleLine
                 tableView.translatesAutoresizingMaskIntoConstraints = false
-                
+                tableView.rowHeight = UITableView.automaticDimension
+                tableView.rowHeight = 80
                 // Uniquely identify each table which will come in handy
-                // when figuring out which model should be loaded for a specific
+                // when figuring out which posts should be loaded for a specific
                 // table view
                 tableView.tag = tableViewUniqueIdFactor + i
                 
                 // Register a default UITableView Cell
-                //tableView.register(PostCell.self, forCellReuseIdentifier: tableViewCellIdentifier)
                 tableView.register(UINib(nibName: "PostCell", bundle: nil), forCellReuseIdentifier: tableViewCellIdentifier)
                 
                 tableView.dataSource = self
-                tableView.rowHeight = 100
                 
                 tableView.backgroundColor = UIColor.clear
                 
@@ -210,7 +191,7 @@ class ViewController: UIViewController {
         let postArray = NSMutableArray()
         for i in 0...10 {
             
-            var postViewArray: [Post] = []
+            var postViewArray: [PostResponse] = []
             let k = 10 * (1 * i)
             let l = 10 + k
             if(k < totalPosts.count) {
@@ -265,16 +246,16 @@ extension ViewController: UITableViewDataSource
         let postIndex = tableView.tag - tableViewUniqueIdFactor
         
         // Get the correct array needed from model
-        let postsForCurrentTable: [Post]  = postsArray[postIndex] as! [Post]
+        let postsForCurrentTable: [PostResponse]  = postsArray[postIndex] as! [PostResponse]
         
         
         let cell:PostCell = tableView.dequeueReusableCell(withIdentifier: tableViewCellIdentifier) as! PostCell
-        let post: Post = postsForCurrentTable[indexPath.row] as Post
+        let post: PostResponse = postsForCurrentTable[indexPath.row] as PostResponse
         
-        cell.userIdLabel.text = "UserId :" + String(post.userId)
-        cell.idLabel.text = "Id " + String(post.id)
+        //cell.userIdLabel.text = "UserId :" + String(post.userId)
+        cell.idLabel.text = "Id: " + String(post.id)
         cell.titleLabel.text = "Title: " + post.title
-        cell.bodyLabel.text = "Body: " + post.body
+        //cell.bodyLabel.text = "Body: " + post.body
         
         
         return cell
